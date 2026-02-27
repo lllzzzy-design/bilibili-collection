@@ -8,15 +8,33 @@
 
   <h1>🎬 我的Bilibili视频收藏</h1>
 
+  <!-- 分类选择 -->
+  <select id="category">
+    <option value="学习">学习</option>
+    <option value="音乐">音乐</option>
+    <option value="娱乐">娱乐</option>
+  </select>
+
+  <!-- 输入框 -->
   <input id="input" placeholder="粘贴B站视频链接" style="width:300px;">
   <button onclick="addVideo()">添加</button>
 
   <hr>
 
+  <!-- 分类筛选按钮 -->
+  <button onclick="setCategory('全部')">全部</button>
+  <button onclick="setCategory('学习')">学习</button>
+  <button onclick="setCategory('音乐')">音乐</button>
+  <button onclick="setCategory('娱乐')">娱乐</button>
+
+  <hr>
+
+  <!-- 视频展示区域 -->
   <div id="videos"></div>
 
   <script>
     let videos = JSON.parse(localStorage.getItem("videos")) || [];
+    let currentCategory = "全部";
 
     function save() {
       localStorage.setItem("videos", JSON.stringify(videos));
@@ -26,32 +44,46 @@
       const container = document.getElementById("videos");
       container.innerHTML = "";
 
-      videos.forEach(bvid => {
-        container.innerHTML += `
-          <iframe 
-            src="https://player.bilibili.com/player.html?bvid=${bvid}"
-            width="500"
-            height="300"
-            frameborder="0"
-            allowfullscreen>
-          </iframe>
-          <hr/>
-        `;
-      });
+      videos
+        .filter(v => currentCategory === "全部" || v.category === currentCategory)
+        .forEach(video => {
+          container.innerHTML += `
+            <div>
+              <p>分类: ${video.category}</p>
+              <iframe 
+                src="https://player.bilibili.com/player.html?bvid=${video.bvid}"
+                width="500"
+                height="300"
+                frameborder="0"
+                allowfullscreen>
+              </iframe>
+              <hr/>
+            </div>
+          `;
+        });
     }
 
     function addVideo() {
       const url = document.getElementById("input").value;
+      const category = document.getElementById("category").value;
       const match = url.match(/BV\w+/);
 
       if(match){
-        videos.push(match[0]);
+        videos.push({
+          bvid: match[0],
+          category: category
+        });
         save();
         render();
         document.getElementById("input").value = "";
       } else {
         alert("无法识别BV号");
       }
+    }
+
+    function setCategory(cat){
+      currentCategory = cat;
+      render();
     }
 
     render();
