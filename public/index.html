@@ -8,24 +8,22 @@
 
   <h1>🎬 我的Bilibili视频收藏</h1>
 
-  <!-- 分类选择 -->
-  <select id="category">
-    <option value="学习">学习</option>
-    <option value="音乐">音乐</option>
-    <option value="娱乐">娱乐</option>
-  </select>
-
-  <!-- 输入框 -->
-  <input id="input" placeholder="粘贴B站视频链接" style="width:300px;">
-  <button onclick="addVideo()">添加</button>
+  <!-- 添加新分类 -->
+  <input id="newCategoryInput" placeholder="输入新分类名称">
+  <button onclick="addCategory()">添加分类</button>
 
   <hr>
 
-  <!-- 分类筛选按钮 -->
-  <button onclick="setCategory('全部')">全部</button>
-  <button onclick="setCategory('学习')">学习</button>
-  <button onclick="setCategory('音乐')">音乐</button>
-  <button onclick="setCategory('娱乐')">娱乐</button>
+  <!-- 分类选择 -->
+  <select id="categorySelect"></select>
+
+  <input id="videoInput" placeholder="粘贴B站视频链接" style="width:300px;">
+  <button onclick="addVideo()">添加视频</button>
+
+  <hr>
+
+  <!-- 分类筛选区域 -->
+  <div id="categoryButtons"></div>
 
   <hr>
 
@@ -33,14 +31,32 @@
   <div id="videos"></div>
 
   <script>
+
     let videos = JSON.parse(localStorage.getItem("videos")) || [];
+    let categories = JSON.parse(localStorage.getItem("categories")) || ["默认"];
     let currentCategory = "全部";
 
     function save() {
       localStorage.setItem("videos", JSON.stringify(videos));
+      localStorage.setItem("categories", JSON.stringify(categories));
     }
 
-    function render() {
+    function renderCategories() {
+      const select = document.getElementById("categorySelect");
+      const buttons = document.getElementById("categoryButtons");
+
+      select.innerHTML = "";
+      buttons.innerHTML = "";
+
+      categories.forEach(cat => {
+        select.innerHTML += `<option value="${cat}">${cat}</option>`;
+        buttons.innerHTML += `<button onclick="setCategory('${cat}')">${cat}</button>`;
+      });
+
+      buttons.innerHTML = `<button onclick="setCategory('全部')">全部</button>` + buttons.innerHTML;
+    }
+
+    function renderVideos() {
       const container = document.getElementById("videos");
       container.innerHTML = "";
 
@@ -63,9 +79,19 @@
         });
     }
 
+    function addCategory() {
+      const newCat = document.getElementById("newCategoryInput").value.trim();
+      if(newCat && !categories.includes(newCat)){
+        categories.push(newCat);
+        save();
+        renderCategories();
+        document.getElementById("newCategoryInput").value = "";
+      }
+    }
+
     function addVideo() {
-      const url = document.getElementById("input").value;
-      const category = document.getElementById("category").value;
+      const url = document.getElementById("videoInput").value;
+      const category = document.getElementById("categorySelect").value;
       const match = url.match(/BV\w+/);
 
       if(match){
@@ -74,8 +100,8 @@
           category: category
         });
         save();
-        render();
-        document.getElementById("input").value = "";
+        renderVideos();
+        document.getElementById("videoInput").value = "";
       } else {
         alert("无法识别BV号");
       }
@@ -83,10 +109,12 @@
 
     function setCategory(cat){
       currentCategory = cat;
-      render();
+      renderVideos();
     }
 
-    render();
+    renderCategories();
+    renderVideos();
+
   </script>
 
 </body>
