@@ -1,50 +1,57 @@
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const bodyParser = require("body-parser");
+const { Pool } = require("pg");
 
 const app = express();
+app.use(express.json());
+app.use(express.static("public"));
 
-app.use(bodyParser.json());
-
-const db = new sqlite3.Database("./videos.db");
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS videos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bvid TEXT,
-    category TEXT
-  )
-`);
-
-// API 路由必须在 static 之前
-app.get("/api/videos", (req, res) => {
-  db.all("SELECT * FROM videos", (err, rows) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "数据库错误" });
-    }
-    res.json(rows);
-  });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
-app.post("/api/videos", (req, res) => {
+// 自动创建表
+async function initDB() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS videos (
+      id SERIAL PRIMARY KEY,
+      bvid TEXT NOT NULL,
+      category TEXT NOT NULL
+    )
+  `);
+  console.log("数据库已准备好");
+}
+
+initDB();
+
+// 获取视频
+app.get("/api/videos", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM videos ORDER BY id DESC");
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "数据库读取失败" });
+  }
+});
+
+// 添加视频
+app.post("/api/videos", async (req, res) => {
   const { bvid, category } = req.body;
 
-  db.run(
-    "INSERT INTO videos (bvid, category) VALUES (?, ?)",
-    [bvid, category],
-    function(err) {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: "插入失败" });
-      }
-      res.json({ success: true });
-    }
-  );
+  try {
+    await pool.query(
+      "INSERT INTO videos (bvid, category) VALUES ($1, $2)",
+      [bvid, category]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "插入失败" });
+  }
 });
-
-// ⚠ static 必须放在 API 之后
-app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 
