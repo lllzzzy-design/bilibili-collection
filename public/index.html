@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>B站视频收藏</title>
+</head>
+<body>
+
+  <h1>🎬 我的Bilibili视频收藏</h1>
+
+  <input id="input" placeholder="粘贴B站视频链接" style="width:300px;">
+  <button onclick="addVideo()">添加</button>
+
+  <hr>
+
+  <div id="videos"></div>
+
+  <script>
+    let videos = JSON.parse(localStorage.getItem("videos")) || [];
+
+    function save() {
+      localStorage.setItem("videos", JSON.stringify(videos));
+    }
+
+    function render() {
+      const container = document.getElementById("videos");
+      container.innerHTML = "";
+
+      videos.forEach(bvid => {
+        container.innerHTML += `
+          <iframe 
+            src="https://player.bilibili.com/player.html?bvid=${bvid}"
+            width="500"
+            height="300"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+          <hr/>
+        `;
+      });
+    }
+
+    function addVideo() {
+      const url = document.getElementById("input").value;
+      const match = url.match(/BV\w+/);
+
+      if(match){
+        videos.push(match[0]);
+        save();
+        render();
+        document.getElementById("input").value = "";
+      } else {
+        alert("无法识别BV号");
+      }
+    }
+
+    render();
+  </script>
+
+</body>
+</html>
